@@ -12,7 +12,7 @@ class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
 
         val costMat = Array(n + 1) {
             Array(m + 1) {
-                CostHistory(WarpCost.MAX_VALUE, -1, -1)
+                CostHistory(WarpCost.MAX_VALUE, 0, 0)
             }
         }
         costMat[0][0].cost = 0.0
@@ -68,7 +68,9 @@ class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
                     break
                 }
             }
-            startJ = newStartJ!!
+            if (newStartJ != null) {
+                startJ = newStartJ
+            }
         }
         return window
     }
