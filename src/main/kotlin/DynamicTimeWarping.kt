@@ -5,7 +5,7 @@ typealias WarpPath = List<WarpMapping>
 typealias MutableWarpPath = MutableList<WarpMapping>
 typealias WarpCost = Double
 typealias WindowData = Pair<Int, Int>
-data class CostHistory(var cost: WarpCost, var lastI: Int, var lastJ: Int)
+data class CostHistory(var cost: WarpCost, var prevI: Int, var prevJ: Int)
 
 class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
     fun warp(a: List<WarpData>, b: List<WarpData>, defaultWindow: WarpPath? = null): Pair<WarpCost, WarpPath> {
@@ -30,8 +30,8 @@ class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
                 .minBy { (y, x) -> costMat[y][x].cost }
                 .let { (y, x) ->
                     costMat[i][j].cost = abs(a[i-1] - b[j-1]) + costMat[y][x].cost
-                    costMat[i][j].lastI = y
-                    costMat[i][j].lastJ = x
+                    costMat[i][j].prevI = y
+                    costMat[i][j].prevJ = x
                 }
         }
         val path: MutableWarpPath = mutableListOf()
@@ -40,8 +40,8 @@ class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
         while (i != 0 && j != 0) {
             path.add(Pair(i-1, j-1))
             costMat[i][j].let {
-                i = it.lastI
-                j = it.lastJ
+                i = it.prevI
+                j = it.prevJ
             }
         }
         path.reverse()
@@ -56,8 +56,8 @@ class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
         val path = lowResPath.toMutableSet()
         path.addAll(lowResPath.flatMap { (i,j) ->
             (-radius..radius).flatMap { p ->
-                (-radius..radius).map { q ->
-                    Pair(i + p, j + q)
+                (-radius..radius).mapNotNull { q ->
+                    if (i+p>=0 && j+q>=0)  Pair(i + p, j + q) else null
                 }
             }
         })
@@ -89,7 +89,7 @@ class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
                 startJ = newStartJ
             }
         }
-        return window
+        return window.map { (i, j) -> Pair(i + 1, j + 1) }
     }
 
     fun fastWarp(a: List<WarpData>, b: List<WarpData>, radius: Int = 1): Pair<WarpCost, WarpPath> {

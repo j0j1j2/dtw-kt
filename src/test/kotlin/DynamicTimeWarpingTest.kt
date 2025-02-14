@@ -5,13 +5,13 @@ import org.junit.jupiter.api.Test
 class DynamicTimeWarpingTest {
     @Test
     fun testFastWarp() {
+        val dtw = DynamicTimeWarping<TimeSeriesDouble>()
         val a = timeSeriesDoubleListOf(1.0, 2.0, 3.0, 4.0, 5.0)
         val b = timeSeriesDoubleListOf(2.0, 3.0, 4.0)
 
-        val dtw = DynamicTimeWarping<TimeSeriesDouble>()
         val (cost, path) = dtw.fastWarp(a, b)
-
-        assertEquals(listOf(Pair(0, 0), Pair(1, 1), Pair(2, 1), Pair(3, 2), Pair(4, 2)), path)
+        assertEquals(2.0, cost)
+        assertEquals(listOf(Pair(0, 0), Pair(1, 0), Pair(2, 1), Pair(3, 2), Pair(4, 2)), path)
     }
 
     @Test
