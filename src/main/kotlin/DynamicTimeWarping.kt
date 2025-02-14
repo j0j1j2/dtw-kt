@@ -1,3 +1,5 @@
+import kotlin.math.abs
+
 typealias WarpMapping = Pair<Int, Int>
 typealias WarpPath = List<WarpMapping>
 typealias MutableWarpPath = MutableList<WarpMapping>
@@ -12,20 +14,35 @@ class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
 
         val costMat = Array(n + 1) {
             Array(m + 1) {
-                CostHistory(WarpCost.MAX_VALUE, 0, 0)
+                CostHistory(WarpCost.MAX_VALUE, -1, -1)
             }
         }
         costMat[0][0].cost = 0.0
 
-        val window = defaultWindow ?: Array(n) { i->Array(m) { j-> Pair(i + 1, j + 1) } }.flatten()
+        val window = defaultWindow ?: (1..n).flatMap {i->
+            (1..m).map { j->
+                Pair(i, j)
+            }
+        }
 
+        for ((i, j) in window) {
+            listOf(Pair(i - 1, j), Pair(i, j-1), Pair(i-1, j-1))
+                .minBy { (y, x) -> costMat[y][x].cost }
+                .let { (y, x) ->
+                    costMat[i][j].cost = abs(a[i-1] - b[j-1]) + costMat[y][x].cost
+                    costMat[i][j].lastI = y
+                    costMat[i][j].lastJ = x
+                }
+        }
         val path: MutableWarpPath = mutableListOf()
         var i = n
         var j = m
         while (i != 0 && j != 0) {
             path.add(Pair(i-1, j-1))
-            i = costMat[i][j].lastI
-            j = costMat[i][j].lastJ
+            costMat[i][j].let {
+                i = it.lastI
+                j = it.lastJ
+            }
         }
         path.reverse()
         return Pair(costMat[n][m].cost, path)
