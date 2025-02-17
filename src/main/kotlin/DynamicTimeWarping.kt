@@ -7,7 +7,7 @@ typealias WarpCost = Double
 typealias WindowData = Pair<Int, Int>
 data class CostHistory(var cost: WarpCost, var prevI: Int, var prevJ: Int)
 
-class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
+class DynamicTimeWarping<WarpData> where WarpData: TimeSeriesCompat<WarpData> {
     fun warp(a: List<WarpData>, b: List<WarpData>, defaultWindow: WarpPath? = null): Pair<WarpCost, WarpPath> {
         val n = a.size
         val m = b.size
@@ -73,7 +73,7 @@ class DynamicTimeWarping<WarpData: TimeSeriesCompat<WarpData>> {
 
         val window = mutableListOf<WindowData>()
         var startJ = 0
-        for (i in 0..<a.size) {
+        for (i in a.indices) {
             var newStartJ: Int? = null
             for (j in startJ..<b.size) {
                 if (Pair(i, j) in windowSet) {
