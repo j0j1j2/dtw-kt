@@ -5,10 +5,11 @@ typealias WarpPath = List<WarpMapping>
 typealias MutableWarpPath = MutableList<WarpMapping>
 typealias WarpCost = Double
 typealias WindowData = Pair<Int, Int>
-data class CostHistory(var cost: WarpCost, var prevI: Int, var prevJ: Int)
+typealias CostPosition = Pair<Int, Int>
+data class CostHistory(var cost: WarpCost, var prevI: Int, var prevJ: Int, var streak: Int = 0)
 
 class DynamicTimeWarping<WarpData> where WarpData: TimeSeriesCompat<WarpData> {
-    fun warp(a: List<WarpData>, b: List<WarpData>, defaultWindow: WarpPath? = null): Pair<WarpCost, WarpPath> {
+    fun warp(a: List<WarpData>, b: List<WarpData>, defaultWindow: WarpPath? = null): Triple<WarpCost, WarpPath, Array<Array<CostHistory>>> {
         val n = a.size
         val m = b.size
 
@@ -26,13 +27,18 @@ class DynamicTimeWarping<WarpData> where WarpData: TimeSeriesCompat<WarpData> {
         }
 
         for ((i, j) in window) {
-            listOf(Pair(i - 1, j), Pair(i, j-1), Pair(i-1, j-1))
-                .minBy { (y, x) -> costMat[y][x].cost }
-                .let { (y, x) ->
-                    costMat[i][j].cost = abs(a[i-1] - b[j-1]) + costMat[y][x].cost
-                    costMat[i][j].prevI = y
-                    costMat[i][j].prevJ = x
-                }
+            val prevCandidates = listOf(CostPosition(i - 1, j), CostPosition(i, j - 1), CostPosition(i - 1, j - 1))
+            val (pos, prev) = prevCandidates.map { (y, x) -> Pair(CostPosition(y, x),costMat[y][x]) }
+                .sortedWith( compareBy<Pair<CostPosition, CostHistory>> { it.second.cost }.thenByDescending { it.second.streak })
+                .first()
+
+            pos.let {(y, x) ->
+                val distance = abs(a[i-1] - b[j-1])
+                costMat[i][j].cost = distance + costMat[y][x].cost
+                costMat[i][j].streak = if (distance == .0) prev.streak + 1 else 0
+                costMat[i][j].prevI = y
+                costMat[i][j].prevJ = x
+            }
         }
         val path: MutableWarpPath = mutableListOf()
         var i = n
@@ -45,7 +51,7 @@ class DynamicTimeWarping<WarpData> where WarpData: TimeSeriesCompat<WarpData> {
             }
         }
         path.reverse()
-        return Pair(costMat[n][m].cost, path)
+        return Triple(costMat[n][m].cost, path, costMat)
     }
 
     fun reduceByHalf(a: List<WarpData>): List<WarpData> {
@@ -92,7 +98,7 @@ class DynamicTimeWarping<WarpData> where WarpData: TimeSeriesCompat<WarpData> {
         return window.map { (i, j) -> Pair(i + 1, j + 1) }
     }
 
-    fun fastWarp(a: List<WarpData>, b: List<WarpData>, radius: Int = 1): Pair<WarpCost, WarpPath> {
+    fun fastWarp(a: List<WarpData>, b: List<WarpData>, radius: Int = 1): Triple<WarpCost, WarpPath, Array<Array<CostHistory>>> {
         if (a.size < radius + 2 || b.size < radius + 2) {
             return warp(a, b)
         }

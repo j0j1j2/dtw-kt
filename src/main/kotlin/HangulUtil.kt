@@ -74,7 +74,7 @@ object HangulUtil {
     }
 
     @JvmStatic
-    fun hangulStrSimilarity(lhs: String, rhs: String): Pair<WarpCost, WarpPath> {
+    fun hangulStrSimilarity(lhs: String, rhs: String): Triple<WarpCost, WarpPath, Array<Array<CostHistory>>> {
         val lhsSeries = timeSeriesHangulListOf(*lhs.map { dissectHangul(it) }.toTypedArray())
         val rhsSeries = timeSeriesHangulListOf(*rhs.map { dissectHangul(it) }.toTypedArray())
         val dtw = DynamicTimeWarping<TimeSeriesHangul>()
